@@ -58,7 +58,7 @@ func (m *modular) Run() {
 
 func gitRepo(dir string) (repo *git.Repository) {
 	var err error
-	if repo, err = git.PlainOpen("."); err != nil {
+	if repo, err = git.PlainOpen(dir); err != nil {
 		log.Fatal(err)
 	}
 	return

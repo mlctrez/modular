@@ -175,11 +175,7 @@ func (m *modular) push(tag SemVerTag) {
 		log.Fatal(err)
 	}
 
-	// using specs
-	// [refs/heads/refs/heads/master:refs/remotes/origin/refs/heads/master
-	// refs/tags/v0.1.3:refs/tags/v0.1.3]
 	branch := strings.TrimPrefix(string(head.Name()), "refs/heads/")
-	//log.Fatal(headBranch)
 
 	specs := []config.RefSpec{
 		config.RefSpec(fmt.Sprintf("%s:refs/remotes/origin/%s", head.Name(), branch)),

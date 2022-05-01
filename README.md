@@ -10,10 +10,32 @@ This is a hobby project for learning go-git and simplifying commit - tag - push 
 
 modular `tag_command` "commit message"
 
-`tag_command` indicates that a tag should be created for this commit
+`tag_command` indicates that an annotated tag should be created. It can be either:
 
-* the keyword `bump` will take the latest semver tag and increment the revision for the new tag
-* a string with the actual tag number like 1.0.0
+* the keyword `bump` - increment the minor revision of the latest semver tag in the repo
+* a semver string - the tag will be created with a prefix of `v` - `1.0.0` becomes `v1.0.0`
+
+### Example
+
+```bash
+git add README.md
+modular bump "add documentation"
+```
+replaces
+```bash
+git add README.md
+git tag -l  # find the last tag used and increment the minor revision
+git commit -m "add documentation"
+git tag -a v0.1.5 -m "v0.1.5"
+git push origin master
+git push origin v0.1.5
+```
+
+
+
+
+
+
 
 
 

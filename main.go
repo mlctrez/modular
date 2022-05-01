@@ -175,13 +175,21 @@ func (m *modular) push(tag SemVerTag) {
 		log.Fatal(err)
 	}
 
+	// using specs
+	// [refs/heads/refs/heads/master:refs/remotes/origin/refs/heads/master
+	// refs/tags/v0.1.3:refs/tags/v0.1.3]
+	remoteName := "refs/remotes/origin" + strings.TrimPrefix(string(head.Name()), "refs/heads")
+
 	specs := []config.RefSpec{
-		config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name(), head.Name())),
+		config.RefSpec(fmt.Sprintf("%s:refs/remotes/origin/%s", head.Name(), remoteName)),
 	}
 
 	if tag.Parsed {
 		specs = append(specs, tag.RefSpec())
 	}
+
+	fmt.Println("using specs", specs)
+
 	err = m.repo.Push(&git.PushOptions{
 		Auth:       auth,
 		RemoteName: "origin",
@@ -201,7 +209,7 @@ type SemVerTag struct {
 }
 
 func (sv SemVerTag) RefSpec() config.RefSpec {
-	return config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", sv, sv))
+	return config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/remotes/origin/tags/%s", sv, sv))
 }
 
 func ParseVersionString(in string) (tag SemVerTag, err error) {

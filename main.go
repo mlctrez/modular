@@ -4,8 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/kevinburke/ssh_config"
+	"github.com/mitchellh/go-homedir"
 	"log"
 	"os"
 	"strconv"
@@ -44,6 +48,9 @@ func (m *modular) Run() {
 			// this is a commit message
 			m.commit(arg)
 		}
+	}
+	if len(refs) > 0 {
+		m.push(refs)
 	}
 }
 
@@ -121,6 +128,35 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 		log.Fatal(err)
 	}
 	return
+}
+
+func (m *modular) push(refs []plumbing.Hash) {
+	identity := ssh_config.Get("github.com", "IdentityFile")
+	if identity == "" {
+		identity = "~/.git/id_rsa"
+	}
+	expand, err := homedir.Expand(identity)
+	if err != nil {
+		log.Fatal(err)
+	}
+	callback, err := ssh.NewKnownHostsCallback()
+	if err != nil {
+		log.Fatal(err)
+	}
+	auth, err := ssh.NewPublicKeysFromFile("git", expand, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	clientConfig, err := auth.ClientConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	clientConfig.HostKeyCallback = callback
+	err = m.repo.Push(&git.PushOptions{
+		Auth:       auth,
+		RemoteName: "origin",
+		RefSpecs:   []config.RefSpec{config.RefSpec("refs/tags/*:refs/tags/*")},
+	})
 }
 
 type SemVerTag struct {

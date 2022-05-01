@@ -19,5 +19,4 @@ func TestSemVerTag_GreaterThan(t *testing.T) {
 	req.False(p("0.0.0").GreaterThan(p("0.0.1")))
 	req.True(p("0.1.0").GreaterThan(p("0.0.99")))
 	req.True(p("1.0.0").GreaterThan(p("0.99.99")))
-
 }

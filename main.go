@@ -174,8 +174,6 @@ func (m *modular) push(tag SemVerTag) {
 		log.Fatal(err)
 	}
 
-	log.Println(head.Name())
-
 	specs := []config.RefSpec{
 		config.RefSpec(fmt.Sprintf("%s:%s", head.Name(), head.Name())),
 	}
@@ -193,7 +191,6 @@ func (m *modular) push(tag SemVerTag) {
 	if err != nil && !strings.Contains(err.Error(), "already up-to-date") {
 		log.Fatal(err)
 	}
-
 }
 
 type SemVerTag struct {
@@ -217,16 +214,19 @@ func ParseVersionString(in string) (tag SemVerTag, err error) {
 	if err != nil {
 		tag.Major = 0
 		err = fmt.Errorf("major not int")
+		return
 	}
 	tag.Minor, err = strconv.Atoi(parts[1])
 	if err != nil {
 		tag.Minor = 0
 		err = fmt.Errorf("minor not int")
+		return
 	}
 	tag.Revision, err = strconv.Atoi(parts[2])
 	if err != nil {
 		tag.Revision = 0
 		err = fmt.Errorf("revision not int")
+		return
 	}
 	tag.Parsed = true
 	return

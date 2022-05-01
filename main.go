@@ -31,7 +31,9 @@ func (m *modular) Run() {
 	args := flag.Args()
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "Usage: modular <arg>")
-		fmt.Fprintln(os.Stderr, "  where <arg> is a semantic version or `bump` increment the revision")
+		fmt.Fprintln(os.Stderr, "  where <arg> is:")
+		fmt.Fprintln(os.Stderr, "    a semantic version or `bump` increment the revision")
+		fmt.Fprintln(os.Stderr, "    a commit message")
 		os.Exit(-1)
 	}
 	var refs []plumbing.Hash
@@ -50,7 +52,7 @@ func (m *modular) Run() {
 		}
 	}
 	if len(refs) > 0 {
-		m.push(refs)
+		m.push()
 	}
 }
 
@@ -130,7 +132,7 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 	return
 }
 
-func (m *modular) push(refs []plumbing.Hash) {
+func (m *modular) push() {
 	identity := ssh_config.Get("github.com", "IdentityFile")
 	if identity == "" {
 		identity = "~/.git/id_rsa"

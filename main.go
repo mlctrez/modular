@@ -178,13 +178,14 @@ func (m *modular) push(tag SemVerTag) {
 	// using specs
 	// [refs/heads/refs/heads/master:refs/remotes/origin/refs/heads/master
 	// refs/tags/v0.1.3:refs/tags/v0.1.3]
-	remoteName := "refs/remotes/origin" + strings.TrimPrefix(string(head.Name()), "refs/heads")
+	remoteName := "refs/remotes/origin" + strings.TrimPrefix(string(head.Name()), "refs/heads/")
 
 	specs := []config.RefSpec{
 		config.RefSpec(fmt.Sprintf("%s:refs/remotes/origin/%s", head.Name(), remoteName)),
 	}
 
 	if tag.Parsed {
+		m.createTag(tag)
 		specs = append(specs, tag.RefSpec())
 	}
 

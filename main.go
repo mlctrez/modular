@@ -153,10 +153,18 @@ func (m *modular) push(refs []plumbing.Hash) {
 		log.Fatal(err)
 	}
 	clientConfig.HostKeyCallback = callback
+
+	// push code
+	err = m.repo.Push(&git.PushOptions{Auth: auth, RemoteName: "origin"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// push tags
 	err = m.repo.Push(&git.PushOptions{
 		Auth:       auth,
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{config.RefSpec("refs/tags/*:refs/tags/*")},
+		RefSpecs:   []config.RefSpec{"refs/tags/*:refs/tags/*"},
 	})
 	if err != nil {
 		log.Fatal(err)

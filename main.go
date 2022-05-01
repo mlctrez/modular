@@ -46,10 +46,11 @@ func (m *modular) Run() {
 				continue
 			}
 			// this is a commit message
-			m.commit(arg)
+			refs = append(refs, m.commit(arg))
 		}
 	}
 	if len(refs) > 0 {
+		log.Println("pushing", refs)
 		m.push(refs)
 	}
 }
@@ -157,6 +158,10 @@ func (m *modular) push(refs []plumbing.Hash) {
 		RemoteName: "origin",
 		RefSpecs:   []config.RefSpec{config.RefSpec("refs/tags/*:refs/tags/*")},
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 type SemVerTag struct {

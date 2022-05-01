@@ -211,7 +211,7 @@ type SemVerTag struct {
 }
 
 func (sv SemVerTag) RefSpec() config.RefSpec {
-	return config.RefSpec(fmt.Sprintf("%s:%s", sv, sv))
+	return config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", sv, sv))
 }
 
 func ParseVersionString(in string) (tag SemVerTag, err error) {

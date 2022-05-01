@@ -147,7 +147,6 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 }
 
 func (m *modular) push(tag SemVerTag) {
-	fmt.Println("push")
 	identity := ssh_config.Get("github.com", "IdentityFile")
 	if identity == "" {
 		identity = "~/.git/id_rsa"
@@ -185,8 +184,6 @@ func (m *modular) push(tag SemVerTag) {
 		m.createTag(tag)
 		specs = append(specs, tag.RefSpec())
 	}
-
-	fmt.Println("using specs", specs)
 
 	err = m.repo.Push(&git.PushOptions{
 		Auth:       auth,

@@ -1,4 +1,4 @@
 # modular
 
-[![Go Report](https://yrk6nexjmsi2nf4tredyu7n2vi0ggwms.lambda-url.us-east-1.on.aws/mlctrez/modular)](https://goreportcard.com/report/github.com/mlctrez/modular)
+[![Go Report](https://badge.mlctrez.com/mlctrez/modular)](https://goreportcard.com/report/github.com/mlctrez/modular)
 

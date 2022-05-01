@@ -50,7 +50,6 @@ func (m *modular) Run() {
 		}
 	}
 	if len(refs) > 0 {
-		log.Println("pushing", refs)
 		m.push(refs)
 	}
 }
@@ -156,7 +155,7 @@ func (m *modular) push(refs []plumbing.Hash) {
 
 	// push code
 	err = m.repo.Push(&git.PushOptions{Auth: auth, RemoteName: "origin"})
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "already up-to-date") {
 		log.Fatal(err)
 	}
 
@@ -166,7 +165,7 @@ func (m *modular) push(refs []plumbing.Hash) {
 		RemoteName: "origin",
 		RefSpecs:   []config.RefSpec{"refs/tags/*:refs/tags/*"},
 	})
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "already up-to-date") {
 		log.Fatal(err)
 	}
 

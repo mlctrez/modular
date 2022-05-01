@@ -3,6 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -10,10 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kevinburke/ssh_config"
 	"github.com/mitchellh/go-homedir"
-	"log"
-	"os"
-	"strconv"
-	"strings"
 )
 
 func main() {
@@ -34,26 +35,39 @@ func (m *modular) Run() {
 		fmt.Fprintln(os.Stderr, "  where <arg> is:")
 		fmt.Fprintln(os.Stderr, "    a semantic version or `bump` increment the revision")
 		fmt.Fprintln(os.Stderr, "    a commit message")
-		os.Exit(-1)
+		os.Exit(1)
 	}
-	var refs []plumbing.Hash
+
+	argMap := map[string]bool{}
 	for _, arg := range args {
-		switch arg {
-		case "bump":
-			refs = append(refs, m.bump(0))
-		default:
-			// parse out tag if present
-			if newTag, err := ParseVersionString(arg); err == nil {
-				refs = append(refs, m.createTag(newTag))
-				continue
+		argMap[arg] = true
+	}
+	var newTag SemVerTag
+	for arg := range argMap {
+		if arg == "bump" {
+			if newTag.Parsed {
+				log.Fatal("bump with existing parsed tag", newTag)
 			}
-			// this is a commit message
-			refs = append(refs, m.commit(arg))
+			newTag = m.bump(0)
+			delete(argMap, arg)
+		}
+		if tag, err := ParseVersionString(arg); err == nil {
+			if newTag.Parsed {
+				log.Fatal("tag string provided with existing parsed tag", newTag)
+			}
+			newTag = tag
+			delete(argMap, arg)
 		}
 	}
-	if len(refs) > 0 {
-		m.push()
+
+	if len(argMap) != 1 {
+		log.Fatal("provide one commit message")
 	}
+
+	for arg := range argMap {
+		m.commit(arg)
+	}
+	m.push(newTag)
 }
 
 func gitRepo(dir string) (repo *git.Repository) {
@@ -89,7 +103,7 @@ func (m *modular) latestTag() (latest SemVerTag) {
 	return
 }
 
-func (m *modular) bump(which int) plumbing.Hash {
+func (m *modular) bump(which int) SemVerTag {
 	tag := m.latestTag()
 	switch which {
 	case 0:
@@ -102,7 +116,7 @@ func (m *modular) bump(which int) plumbing.Hash {
 		tag.Minor = 0
 		tag.Revision = 0
 	}
-	return m.createTag(tag)
+	return tag
 }
 
 func (m *modular) createTag(tag SemVerTag) (ref plumbing.Hash) {
@@ -132,7 +146,7 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 	return
 }
 
-func (m *modular) push() {
+func (m *modular) push(tag SemVerTag) {
 	identity := ssh_config.Get("github.com", "IdentityFile")
 	if identity == "" {
 		identity = "~/.git/id_rsa"
@@ -155,17 +169,22 @@ func (m *modular) push() {
 	}
 	clientConfig.HostKeyCallback = callback
 
-	// push code
-	err = m.repo.Push(&git.PushOptions{Auth: auth, RemoteName: "origin"})
-	if err != nil && !strings.Contains(err.Error(), "already up-to-date") {
+	head, err := m.repo.Head()
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	// push tags
+	specs := []config.RefSpec{
+		config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name(), head.Name())),
+	}
+
+	if tag.Parsed {
+		specs = append(specs, tag.RefSpec())
+	}
 	err = m.repo.Push(&git.PushOptions{
 		Auth:       auth,
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{"refs/tags/*:refs/tags/*"},
+		RefSpecs:   specs,
 	})
 	if err != nil && !strings.Contains(err.Error(), "already up-to-date") {
 		log.Fatal(err)
@@ -177,6 +196,11 @@ type SemVerTag struct {
 	Major    int
 	Minor    int
 	Revision int
+	Parsed   bool
+}
+
+func (sv SemVerTag) RefSpec() config.RefSpec {
+	return config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", sv, sv))
 }
 
 func ParseVersionString(in string) (tag SemVerTag, err error) {
@@ -200,6 +224,7 @@ func ParseVersionString(in string) (tag SemVerTag, err error) {
 		tag.Revision = 0
 		err = fmt.Errorf("revision not int")
 	}
+	tag.Parsed = true
 	return
 }
 

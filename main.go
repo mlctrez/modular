@@ -237,14 +237,11 @@ func (sv SemVerTag) String() string {
 }
 
 func (sv SemVerTag) GreaterThan(other SemVerTag) bool {
-	if sv.Major > other.Major {
-		return true
+	if sv.Major != other.Major {
+		return sv.Major > other.Major
 	}
-	if sv.Minor > other.Minor {
-		return true
+	if sv.Minor != other.Minor {
+		return sv.Minor > other.Minor
 	}
-	if sv.Revision > other.Revision {
-		return true
-	}
-	return false
+	return sv.Revision > other.Revision
 }

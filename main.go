@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,6 +13,8 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kevinburke/ssh_config"
 	"github.com/mitchellh/go-homedir"
@@ -166,7 +166,7 @@ func devToken() string {
 
 func (m *modular) getAuth() (auth transport.AuthMethod) {
 	var repoConfig *config.Config
-	var originUrl string
+	var originURL string
 	var err error
 	if repoConfig, err = m.repo.Config(); err != nil {
 		log.Fatal("error getting repository config", err)
@@ -178,16 +178,15 @@ func (m *modular) getAuth() (auth transport.AuthMethod) {
 		if len(urls) != 1 {
 			log.Fatal("cannot determine single origin url")
 		}
-		originUrl = urls[0]
+		originURL = urls[0]
 	}
-	if strings.HasPrefix(originUrl, "https://github.com") {
 
+	if strings.HasPrefix(originURL, "https://github.com") {
 		token := devToken()
 		if token == "" {
 			log.Fatal("unable to get token from ~/.github_token")
 		}
 		auth = &http.BasicAuth{Username: token}
-
 	} else {
 		identity := ssh_config.Get("github.com", "IdentityFile")
 		if identity == "" {
@@ -215,11 +214,10 @@ func (m *modular) getAuth() (auth transport.AuthMethod) {
 		clientConfig.HostKeyCallback = callback
 		auth = pubKeys
 	}
-	return
+	return auth
 }
 
 func (m *modular) push(tag SemVerTag) {
-
 	auth := m.getAuth()
 	head, err := m.repo.Head()
 	if err != nil {

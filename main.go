@@ -3,8 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -15,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kevinburke/ssh_config"
 	"github.com/mitchellh/go-homedir"
+	xssh "golang.org/x/crypto/ssh"
 )
 
 func main() {
@@ -28,6 +32,7 @@ type modular struct {
 
 func (m *modular) Run() {
 	m.repo = gitRepo(".")
+
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 0 {
@@ -146,29 +151,76 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 	return
 }
 
-func (m *modular) push(tag SemVerTag) {
-	identity := ssh_config.Get("github.com", "IdentityFile")
-	if identity == "" {
-		identity = "~/.git/id_rsa"
-	}
-	expand, err := homedir.Expand(identity)
+func devToken() string {
+	dir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		return ""
 	}
-	callback, err := ssh.NewKnownHostsCallback()
+	var tokenBytes []byte
+	tokenBytes, err = os.ReadFile(filepath.Join(dir, ".github_token"))
 	if err != nil {
-		log.Fatal(err)
+		return ""
 	}
-	auth, err := ssh.NewPublicKeysFromFile("git", expand, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	clientConfig, err := auth.ClientConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	clientConfig.HostKeyCallback = callback
+	return strings.TrimSpace(string(tokenBytes))
+}
 
+func (m *modular) getAuth() (auth transport.AuthMethod) {
+	var repoConfig *config.Config
+	var originUrl string
+	var err error
+	if repoConfig, err = m.repo.Config(); err != nil {
+		log.Fatal("error getting repository config", err)
+	}
+	if origin, ok := repoConfig.Remotes["origin"]; !ok {
+		log.Fatal("cannot determine origin from github config")
+	} else {
+		urls := origin.URLs
+		if len(urls) != 1 {
+			log.Fatal("cannot determine single origin url")
+		}
+		originUrl = urls[0]
+	}
+	if strings.HasPrefix(originUrl, "https://github.com") {
+
+		token := devToken()
+		if token == "" {
+			log.Fatal("unable to get token from ~/.github_token")
+		}
+		auth = &http.BasicAuth{Username: token}
+
+	} else {
+		identity := ssh_config.Get("github.com", "IdentityFile")
+		if identity == "" {
+			identity = "~/.git/id_rsa"
+		}
+		var expand string
+		expand, err = homedir.Expand(identity)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var callback xssh.HostKeyCallback
+		callback, err = ssh.NewKnownHostsCallback()
+		if err != nil {
+			log.Fatal(err)
+		}
+		var pubKeys *ssh.PublicKeys
+		pubKeys, err = ssh.NewPublicKeysFromFile("git", expand, "")
+		if err != nil {
+			log.Fatal(err)
+		}
+		clientConfig, err := pubKeys.ClientConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		clientConfig.HostKeyCallback = callback
+		auth = pubKeys
+	}
+	return
+}
+
+func (m *modular) push(tag SemVerTag) {
+
+	auth := m.getAuth()
 	head, err := m.repo.Head()
 	if err != nil {
 		log.Fatal(err)

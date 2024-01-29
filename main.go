@@ -143,7 +143,6 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 	var worktree *git.Worktree
 	var err error
 	if worktree, err = m.repo.Worktree(); err != nil {
-
 		log.Fatal("repository worktree error:", err)
 	}
 	if ref, err = worktree.Commit(msg, &git.CommitOptions{}); err != nil {

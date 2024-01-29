@@ -128,12 +128,12 @@ func (m *modular) createTag(tag SemVerTag) (ref plumbing.Hash) {
 	var head *plumbing.Reference
 	var err error
 	if head, err = m.repo.Head(); err != nil {
-		log.Fatal(err)
+		log.Fatal("repository head error:", err)
 	}
 	opts := &git.CreateTagOptions{Message: tag.String()}
 	var plum *plumbing.Reference
 	if plum, err = m.repo.CreateTag(tag.String(), head.Hash(), opts); err != nil {
-		log.Fatal(err)
+		log.Fatal("repository create tag error:", err)
 	}
 	ref = plum.Hash()
 	return
@@ -143,10 +143,11 @@ func (m *modular) commit(msg string) (ref plumbing.Hash) {
 	var worktree *git.Worktree
 	var err error
 	if worktree, err = m.repo.Worktree(); err != nil {
-		log.Fatal(err)
+
+		log.Fatal("repository worktree error:", err)
 	}
 	if ref, err = worktree.Commit(msg, &git.CommitOptions{}); err != nil {
-		log.Fatal(err)
+		log.Fatal("worktree commit error: ", err)
 	}
 	return
 }

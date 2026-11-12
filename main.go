@@ -16,9 +16,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/kevinburke/ssh_config"
-	"github.com/mitchellh/go-homedir"
-	xssh "golang.org/x/crypto/ssh"
 )
 
 func main() {
@@ -188,30 +185,14 @@ func (m *modular) getAuth() (auth transport.AuthMethod) {
 		}
 		auth = &http.BasicAuth{Username: token}
 	} else {
-		identity := ssh_config.Get("github.com", "IdentityFile")
-		if identity == "" {
-			identity = "~/.git/id_rsa"
-		}
-		var expand string
-		expand, err = homedir.Expand(identity)
+		home, err := os.UserHomeDir()
 		if err != nil {
 			log.Fatal(err)
 		}
-		var callback xssh.HostKeyCallback
-		callback, err = ssh.NewKnownHostsCallback()
+		pubKeys, err := ssh.NewPublicKeysFromFile("git", filepath.Join(home, ".ssh", "id_ed25519"), "")
 		if err != nil {
 			log.Fatal(err)
 		}
-		var pubKeys *ssh.PublicKeys
-		pubKeys, err = ssh.NewPublicKeysFromFile("git", expand, "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		clientConfig, err := pubKeys.ClientConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
-		clientConfig.HostKeyCallback = callback
 		auth = pubKeys
 	}
 	return auth

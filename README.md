@@ -1,8 +1,5 @@
 # modular
 
-[![Go Report](https://badge.mlctrez.com/mlctrez/modular)](https://goreportcard.com/report/github.com/mlctrez/modular)
-[![golangci-lint](https://github.com/mlctrez/modular/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/mlctrez/modular/actions/workflows/golangci-lint.yml)
-
 ### Background
 
 This is a hobby project for learning go-git and simplifying commit - tag - push workflows.
